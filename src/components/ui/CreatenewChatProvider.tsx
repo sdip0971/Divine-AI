@@ -1,6 +1,7 @@
 'use client'
 import Createnewchat from '@/app/action/newchat';
-import router from 'next/router';
+import { useRouter } from 'next/navigation'; // ✅
+
 import { createContext, useActionState, useContext, useEffect, useState } from 'react'
 interface ChatContextType {
   error?: string;
@@ -10,17 +11,13 @@ interface ChatContextType {
   
 const ChatContext = createContext<ChatContextType|null>(null)
 function CreatenewChatProvider({children}:{children:React.ReactNode}) {
-
-    const [message, setMessage] = useState("");
+    const router=useRouter();
       const [error ,seterror] = useState("");
       const [state, formAction] = useActionState(Createnewchat, {
             error: "",
             redirectUrl: "",
           });
      useEffect(()=>{
-          if(state.error){
-              seterror(state.error) 
-          }
          if(state.redirectUrl){
           router.push(state.redirectUrl)
          }
@@ -29,7 +26,7 @@ function CreatenewChatProvider({children}:{children:React.ReactNode}) {
 
  
   return (
-    <ChatContext.Provider value={{error: error, redirectUrl: state.redirectUrl!,formAction}}>{children}</ChatContext.Provider>
+    <ChatContext.Provider value={{error: state.error, redirectUrl: state.redirectUrl!,formAction}}>{children}</ChatContext.Provider>
   )
 }
 function useNewChat(){
