@@ -18,23 +18,25 @@ export default async function Createnewchat(prevState:MessageState|undefined ,fo
     if (!user || !user.userId) {
           throw new Error("Unauthorized");
         }
- 
-    const chat = await prisma.chat.create({
-      data: {
-        createdAt: new Date(),
-        UserID: user.userId,
-      },
-    });
+
+
    
     //create a new conversation
     if (mode === "new-chat") {
+      const chat = await prisma.chat.create({
+        data: {
+          createdAt: new Date(),
+          UserID: user.userId,
+        },
+      });
         
         return {
-          //redirect to chat id
+        
           redirectUrl: `/chat/${chat.id}`,
         };
     }
     if (mode === "chat") {
+    
       const message = formdata.get("message")?.toString();
       const verifydata = messageschema.safeParse({ message: message });
 
@@ -42,8 +44,14 @@ export default async function Createnewchat(prevState:MessageState|undefined ,fo
         const msg = verifydata.error.flatten().fieldErrors.message?.[0];
         return { error: msg };
       }
-      if(verifydata.data.message?.trim()){
-        const message = await prisma.message.create({
+      const chat = await prisma.chat.create({
+        data: {
+          createdAt: new Date(),
+          UserID: user.userId,
+        },
+      });
+   
+        const messageValue = await prisma.message.create({
             data:{
                 content:verifydata.data.message,
                 role:"user",
@@ -52,11 +60,11 @@ export default async function Createnewchat(prevState:MessageState|undefined ,fo
             }
         })
          return {
-            //redirect to chat id
-            redirectUrl: `/chat/${chat.id}`,
+          
+            redirectUrl: `/chat/${chat.id}?msg=true`,
           };
 
-      }
+      
 
     }
   

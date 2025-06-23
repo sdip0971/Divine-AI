@@ -4,18 +4,33 @@ import { useSidebar } from "../Sidebarprovide";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@clerk/nextjs";
+import { useSession ,useAuth} from "@clerk/nextjs";
+import { chatStore } from "./chatstore";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import ChatTab from "./ChatTab";
 export default function Sidebar() {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
   const { formAction } = useNewChat();
- const session = useSession();
+  const{isSignedIn} = useAuth();
+  const chats = chatStore((s) => s.chats);
+  const refreshChats = chatStore((s) => s.refreshChats);
+  const loading = chatStore((s) => s.loading);
+
+  const pathname = usePathname()
+  useEffect(()=>{
+    refreshChats();
+  },[pathname])
+
   return (
     <div
       className={`${
-        session
+        isSignedIn
           ? `fixed top-0 left-0 h-full w-64 bg-black/30 backdrop-blur-lg text-white p-6 z-40 
             transition-transform duration-300 ease-in-out border-r border-white/10 shadow-xl 
-            ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:block`
+            ${
+              isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } md:translate-x-0 md:static md:block`
           : "hidden"
       }`}
       style={{
@@ -24,7 +39,6 @@ export default function Sidebar() {
         backgroundPosition: "center",
       }}
     >
-      {/* Mobile Close Button */}
       <Button
         onClick={toggleSidebar}
         aria-label="Close sidebar"
@@ -33,7 +47,6 @@ export default function Sidebar() {
         <X size={20} />
       </Button>
 
-      {/* Logo Section */}
       <div className="flex items-center mb-12">
         <img
           src="/icons/feather.jpg"
@@ -42,7 +55,6 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* New Chat */}
       <form action={formAction} className="mb-6">
         <input type="hidden" name="mode" value="new-chat" />
         <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
@@ -50,19 +62,26 @@ export default function Sidebar() {
         </Button>
       </form>
 
-      {/* Links */}
+      
       <div className="space-y-4 text-sm font-light tracking-wide text-indigo-100">
         <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
           <Link href="/chat">🧘 Quote of the Day</Link>
         </Button>
         <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
-          <Link
-            href="/profile"
-           
-          >
-            📜 Story of the Day
-          </Link>
+          <Link href="/profile">📜 Story of the Day</Link>
         </Button>
+      </div>
+
+      <div className="space-y-4 overflow-y-scroll h-[65%] text-sm font-light tracking-wide mt-4 text-indigo-100">
+        {/* <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
+          <Link href="/chat">🧘 Quote of the Day</Link>
+        </Button>
+        <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
+          <Link href="/profile">📜 Story of the Day</Link>
+        </Button> */}
+        {chats.map((chat) => (
+          <ChatTab key={chat.id.toString()} id={chat.id.toString()} />
+        ))}
       </div>
 
       {/* ✨ Footer Vibe */}

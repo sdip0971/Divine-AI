@@ -93,6 +93,7 @@ export default function RootLayout({
           </html>
         </SidebarProvider>
       </CreatenewChatProvider>
-    </ClerkProvider>
+       </ClerkProvider>
+   
   );
 }

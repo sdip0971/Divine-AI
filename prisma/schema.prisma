@@ -19,7 +19,7 @@ model Message{
   id String @id@default(cuid())
   content String
   role Role
-  chat Chat @relation(fields: [chatid],references: [id])
+  chat Chat @relation(fields: [chatid], references: [id], onDelete: Cascade)
   chatid String
   createdAt DateTime @default(now())
 
@@ -28,10 +28,10 @@ model Chat{
 id String @id@default(cuid())
 createdAt DateTime  @default(now())
 messages  Message[]
-UserID String @unique
+UserID String 
 }
 enum Role {
   user
   assistant
-  system // if needed
+  system 
 }
