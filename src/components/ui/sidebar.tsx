@@ -26,7 +26,7 @@ export default function Sidebar() {
     <div
       className={`${
         isSignedIn
-          ? `fixed top-0 left-0 h-full w-64 bg-black/30 backdrop-blur-lg text-white p-6 z-40 
+          ? `fixed top-0 left-0 font-poppins h-full w-64 bg-black/30 backdrop-blur-lg text-white p-6 z-40 
             transition-transform duration-300 ease-in-out border-r border-white/10 shadow-xl 
             ${
               isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -64,7 +64,7 @@ export default function Sidebar() {
 
       
       <div className="space-y-4 text-sm font-light tracking-wide text-indigo-100">
-        <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
+        <Button className="w-full font-poppins bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
           <Link href="/chat">🧘 Quote of the Day</Link>
         </Button>
         <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">

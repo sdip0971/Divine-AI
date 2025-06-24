@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono,Hind,Poppins } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/ui/header";
 import { SidebarProvider } from "@/components/Sidebarprovide";
@@ -37,6 +37,17 @@ const cormorant = Cormorant_Garamond({
   weight: ["400", "700"],
   display: "swap",
 });
+const hind = Hind({
+  subsets: ["devanagari"],
+  weight: ["400", "500", "600"],
+  variable: "--font-hind",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-poppins",
+});
 
 export default function RootLayout({
   children,
@@ -55,6 +66,8 @@ export default function RootLayout({
                 ${inter.variable} 
                 ${geistSans.variable} 
                 ${geistMono.variable} 
+                ${hind.variable} 
+                ${poppins.variable}
                 antialiased 
                 h-screen
                 bg-black
@@ -84,7 +97,7 @@ export default function RootLayout({
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col relative z-30">
                   <Header />
-                  <main className="flex-1 flex flex-col pt-24 px-4 md:px-6 overflow-y-auto text-white">
+                  <main style={{ height: 'calc(100vh - 80px)' }} className="flex-1 flex flex-col mb-2  px-4 md:px-6 overflow-y-auto text-white">
                     {children}
                   </main>
                 </div>
@@ -93,7 +106,6 @@ export default function RootLayout({
           </html>
         </SidebarProvider>
       </CreatenewChatProvider>
-       </ClerkProvider>
-   
+    </ClerkProvider>
   );
 }

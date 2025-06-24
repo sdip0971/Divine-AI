@@ -20,7 +20,7 @@ function Chat() {
 
   return (
     <div className="flex flex-col mb-20 relative justify-center items-center h-screen ">
-      <h1 className="text-white text-center text-4xl mb-2 font-bold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+      <h1 className="text-white text-center font-inter text-4xl mb-2 font-bold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
         Get spiritual guidance, real-time wisdom, and ancient answers to modern
         chaos.
       </h1>
