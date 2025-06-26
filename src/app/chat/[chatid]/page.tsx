@@ -1,12 +1,13 @@
 'use client'
 import { useParams, useSearchParams } from "next/navigation"
 import Sidebar from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { messageStore } from "@/components/ui/messagestore";
 import { POST } from "@/app/api/delete-chat/route";
 import { Button } from "@/components/ui/button";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { Message } from "@/lib/types";
 function ChatPage() {
     const param = useParams();
     const searchParams = useSearchParams()
@@ -20,7 +21,57 @@ function ChatPage() {
     const setloading = messageStore((s)=>s.setloading)
     const setMessages = messageStore((s) => s.setMessages);
     const [error, setError] = useState<string|null>(null)
-    console.log(message)
+    const eventRef = useRef<EventSource | null>(null);
+  
+    const handleMessageSent = (messages: Message[] )=>{
+      //we create a temp msg to show the streaming effect
+      let full = {
+        id: "",
+        content: "",
+        chatid: "streaming",
+        role: "assistant",
+        createdAt: new Date(),
+        chat: {} as any, 
+      } as Message;
+      
+      const eventSource = new EventSource(`/api/${chatid}/stream/response`);
+      eventRef.current = eventSource;
+       
+      eventSource.onmessage = (event)=>{
+
+        
+        const parsed = JSON.parse(event.data); 
+        const tokenValue = parsed.token as string;
+       
+        //isko isliye bnaya hai kyuki rerender trigger nhi hoga react mai jb tk use lge na kuch change hua 
+        //hai temp msg ka refrence hmesha same rehta upr so we create this to tell react dekh ye badal geya
+        full = {
+         ...full,
+         content : full.content+tokenValue
+        }
+ 
+        
+        console.log("token", tokenValue)
+        // Compute the new messages array before calling setMessages
+      // Get the current messages, filter, and update
+      //agr ye line na hoti to har bar ek naya token ane pe naya msg bnata lekin now we is doing that
+      //every time we remove the previous message we added in it {content:Namaste,id="streaming"}ko remove
+      //kredenge and will add {content:Namaste guys,id:"streaming"}
+      const filtered = message.filter(
+        (msg: Message) => msg.chatid !== "streaming"
+      );
+      setMessages([...filtered,full]);
+      eventSource.onerror = (err) => {
+        console.log("SSE error:", err);
+        eventRef.current?.close()
+      };
+
+      return () => {
+
+        eventSource.close();
+      };
+
+    }
     useEffect(() => {
       async function FetchChatdata() {
         setMessages([]);
@@ -34,20 +85,22 @@ function ChatPage() {
             );
             console.log(error)
           }
-          const {messages} = await res.json()
-        
+          const { messages } = (await res.json()) as { messages: Message[] };
           
         if (messages && messages.length > 0) {
           setMessages(messages)
           setloading(false);
         }
+        handleMessageSent(messages)
         }
+
       }
       
         FetchChatdata();
         return ()=>{
           setMessages([]);
           setloading(true);
+          eventRef.current?.close();
 
         };
       
@@ -65,7 +118,7 @@ function ChatPage() {
     );
    }
    if(loading){
-    <Skeleton />; 
+    return <Skeleton  />; 
    }
   
    return (
@@ -74,10 +127,20 @@ function ChatPage() {
          {/* Messages section */}
          <div className="flex flex-col gap-4 overflow-y-auto flex-grow pr-2">
            {message.map((m, idx) => (
-             <div key={String(m.id)} className="flex justify-end">
-               <div className="self-start text-white font-inter bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl max-w-[60%] break-words text-sm">
-                 {m.content}
-               </div>
+             <div key={String(m.id)}>
+               {m.role === "user" ? (
+                 <div className="flex justify-end">
+                   <div className="self-start text-white font-inter bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl max-w-[60%] break-words text-sm">
+                     {m.content}
+                   </div>
+                 </div>
+               ) : (
+                 <div className="flex justify-start  ">
+                   <div className="self-start text-white font-inter bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl max-w-[60%] break-words text-sm">
+                     {m.content}
+                   </div>
+                 </div>
+               )}
              </div>
            ))}
          </div>
@@ -103,6 +166,7 @@ function ChatPage() {
        </div>
      </div>
    );
+}
 }
 
 export default ChatPage

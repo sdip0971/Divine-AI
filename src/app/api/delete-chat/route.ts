@@ -6,8 +6,6 @@ const user = await auth()
 if (!user || !user.userId) {
     return NextResponse.json([], { status: 200 });
   }
-
-
   const { id } = await req.json();
   console.log(id)
   if (!id) {

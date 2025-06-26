@@ -13,6 +13,9 @@ if (!user || !user.userId) {
     orderBy: {
       createdAt: "desc",
     },
+    include :{
+      messages:true
+    }
   });
   return NextResponse.json(chats)
 }
