@@ -3,7 +3,7 @@
         id :String,
         content: String
         role: "user"|"assistant"|"system",
-        chat:Chats,
+        //chat:Chats,
         chatid:String
         createdAt:Date
     }

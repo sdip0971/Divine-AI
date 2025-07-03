@@ -1,172 +1,335 @@
-'use client'
-import { useParams, useSearchParams } from "next/navigation"
+"use client";
+import { useParams, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/ui/sidebar";
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { messageStore } from "@/components/ui/messagestore";
 import { POST } from "@/app/api/delete-chat/route";
 import { Button } from "@/components/ui/button";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { Message } from "@/lib/types";
+import {
+  handleMessageButton,
+  HandleMessageButtonprop,
+} from "@/app/action/handleMessageButton";
+
 function ChatPage() {
-    const param = useParams();
-    const searchParams = useSearchParams()
-    const { chatid } = param;
-    const msg = searchParams.get('msg')
-    console.log(msg)
+  const param = useParams();
+  const searchParams = useSearchParams();
+  const { chatid } = param;
+  const msg = searchParams.get("msg");
 
-    const message = messageStore((s)=>s.messages)
-    const addmessage = messageStore((s)=>s.addMessage)
-    const loading = messageStore((s)=>s.loading)
-    const setloading = messageStore((s)=>s.setloading)
-    const setMessages = messageStore((s) => s.setMessages);
-    const [error, setError] = useState<string|null>(null)
-    const eventRef = useRef<EventSource | null>(null);
-  
-    const handleMessageSent = (messages: Message[] )=>{
-      //we create a temp msg to show the streaming effect
-      let full = {
-        id: "",
-        content: "",
-        chatid: "streaming",
-        role: "assistant",
-        createdAt: new Date(),
-        chat: {} as any, 
-      } as Message;
-      
-      const eventSource = new EventSource(`/api/${chatid}/stream/response`);
-      eventRef.current = eventSource;
-       
-      eventSource.onmessage = (event)=>{
+  const message = messageStore((s) => s.messages);
+  const addmessage = messageStore((s) => s.addMessage);
+  const loading = messageStore((s) => s.loading);
+  const setloading = messageStore((s) => s.setloading);
+  const setMessages = messageStore((s) => s.setMessages);
+  // Removed updateMessage since it doesn't exist in the store
 
-        
-        const parsed = JSON.parse(event.data); 
-        const tokenValue = parsed.token as string;
-       
-        //isko isliye bnaya hai kyuki rerender trigger nhi hoga react mai jb tk use lge na kuch change hua 
-        //hai temp msg ka refrence hmesha same rehta upr so we create this to tell react dekh ye badal geya
-        full = {
-         ...full,
-         content : full.content+tokenValue
-        }
- 
-        
-        console.log("token", tokenValue)
-        // Compute the new messages array before calling setMessages
-      // Get the current messages, filter, and update
-      //agr ye line na hoti to har bar ek naya token ane pe naya msg bnata lekin now we is doing that
-      //every time we remove the previous message we added in it {content:Namaste,id="streaming"}ko remove
-      //kredenge and will add {content:Namaste guys,id:"streaming"}
-      const filtered = message.filter(
-        (msg: Message) => msg.chatid !== "streaming"
-      );
-      setMessages([...filtered,full]);
-      eventSource.onerror = (err) => {
-        console.log("SSE error:", err);
-        eventRef.current?.close()
-      };
+  const [error, setError] = useState<string | null>(null);
+  const eventRef = useRef<EventSource | null>(null);
+  const [inputval, setinputval] = useState("");
+  const [isStreaming, setisStreaming] = useState(false);
+  const streamingMessageRef = useRef<Message | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-      return () => {
+  const initialState: HandleMessageButtonprop = {
+    error: "",
+    status: null,
+    message: undefined,
+  };
+  const [state, formAction] = useActionState(handleMessageButton, initialState);
 
-        eventSource.close();
-      };
-
+  // Cleanup function for EventSource
+  const cleanupStream = () => {
+    if (eventRef.current) {
+      eventRef.current.close();
+      eventRef.current = null;
     }
-    useEffect(() => {
-      async function FetchChatdata() {
-        setMessages([]);
-        if (msg === "true") {
-          console.log("msg to hai baawe");
-          //make db call to get msg and response
-          const res = await fetch(`/api/${chatid}/latest-user-message`);
-          if (!res.ok || res.status == 404) {
-            setError(
-              "Unable to Load the conversation look like there is an issue| संवादं द्रष्टुं न शक्यते। किञ्चित् दोषः जातः इव दृश्यते। | संवाद को लोड करने में असमर्थ हैं। ऐसा प्रतीत होता है कि कोई त्रुटि उत्पन्न हो गई है"
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setisStreaming(false);
+    streamingMessageRef.current = null;
+  };
+
+  // Enhanced message streaming handler
+  const handleMessageSent = (userMessage: Message) => {
+    // Clean up any existing stream
+    cleanupStream();
+
+    setisStreaming(true);
+    setError(null);
+
+    // Create streaming message with unique ID
+    const streamingMessage: Message = {
+      id: `streaming-${crypto.randomUUID()}`,
+      content: "",
+      chatid: chatid as string,
+      role: "assistant",
+      createdAt: new Date(),
+    };
+
+    streamingMessageRef.current = streamingMessage;
+
+    // Add both messages to store
+    const currentMessages = messageStore.getState().messages;
+    setMessages([...currentMessages, userMessage, streamingMessage]);
+
+    // Set up timeout for streaming
+    timeoutRef.current = setTimeout(() => {
+      setError("Response timeout. Please try again.");
+      cleanupStream();
+    }, 30000); // 30 second timeout
+
+    // Start streaming
+    const eventSource = new EventSource(`/api/${chatid}/stream/response`);
+    eventRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      try {
+        // Clear timeout on first message
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
+        const parsed = JSON.parse(event.data);
+
+        // Check if this is a completion signal
+        if (parsed.type === "complete" || parsed.done === true) {
+          console.log("Stream completed");
+          setisStreaming(false);
+
+          // Mark message as completed
+          if (streamingMessageRef.current) {
+            const currentState = messageStore.getState().messages;
+            const updatedMessages = currentState.map((msg) =>
+              msg.id === streamingMessageRef.current?.id
+                ? { ...msg, id: `completed-${Date.now()}` }
+                : msg
             );
-            console.log(error)
+            setMessages(updatedMessages);
           }
+
+          cleanupStream();
+          return;
+        }
+
+        const tokenValue = parsed.token as string;
+
+        if (streamingMessageRef.current && tokenValue) {
+          // Update the streaming message content
+          const updatedContent =
+            streamingMessageRef.current.content + tokenValue;
+          streamingMessageRef.current.content = updatedContent;
+
+          // Update in store - find and update the streaming message
+          const currentState = messageStore.getState().messages;
+          const updatedMessages = currentState.map((msg) =>
+            msg.id === streamingMessageRef.current?.id
+              ? { ...msg, content: updatedContent }
+              : msg
+          );
+
+          setMessages(updatedMessages);
+        }
+      } catch (parseError) {
+        console.error("Error parsing streaming data:", parseError);
+        setError("Error receiving response. Please try again.");
+        cleanupStream();
+      }
+    };
+
+    eventSource.onopen = () => {
+      console.log("Stream connection opened");
+    };
+
+    // Note: EventSource doesn't have onclose event, handle completion via server-sent event
+    // The server should send a completion event or close the connection
+
+    eventSource.onerror = (err) => {
+      console.error("SSE error:", err);
+      setError("Connection error. Please try again.");
+      cleanupStream();
+    };
+  };
+
+  // Direct form submission handler (simplified)
+  // const handleDirectSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   if (isStreaming || !inputval.trim()) return;
+
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append("chatid", chatid as string);
+  //     formData.append("message", inputval.trim());
+  //     formData.append("mode", "chat");
+
+  //     const result = await formAction(formData);
+
+  //     if (result.status === "success" && result.message) {
+  //       setinputval("");
+  //       handleMessageSent(result.message);
+  //     } else if (result.status === "error") {
+  //       setError(result.error || "Failed to send message");
+  //     }
+  //   } catch (err) {
+  //     console.error("Form submission error:", err);
+  //     setError("Failed to send message. Please try again.");
+  //   }
+  // };
+
+  useEffect(() => {
+    async function FetchChatdata() {
+      setMessages([]);
+      setError(null);
+      setloading(true);
+
+      try {
+        if (msg === "true") {
+          console.log("Fetching latest messages");
+
+          const res = await fetch(`/api/${chatid}/latest-user-message`);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+
           const { messages } = (await res.json()) as { messages: Message[] };
-          
-        if (messages && messages.length > 0) {
-          setMessages(messages)
+
+          if (messages && messages.length > 0) {
+            // Set all messages except the last one
+            const existingMessages = messages.slice(0, -1);
+            const latestUserMessage = messages[messages.length - 1];
+
+            setMessages(existingMessages);
+            setloading(false);
+
+            // Start streaming for the latest user message
+            if (latestUserMessage.role === "user") {
+              handleMessageSent(latestUserMessage);
+            }
+          }
+        } else {
           setloading(false);
         }
-        handleMessageSent(messages)
-        }
-
+      } catch (fetchError) {
+        console.error("Error fetching chat data:", fetchError);
+        setError(
+          "Unable to load the conversation. Please try refreshing the page."
+        );
+        setloading(false);
       }
-      
-        FetchChatdata();
-        return ()=>{
-          setMessages([]);
-          setloading(true);
-          eventRef.current?.close();
+    }
 
-        };
-      
-    }, [chatid]);
+    FetchChatdata();
 
+    // Cleanup on component unmount or chatid change
+    return () => {
+      cleanupStream();
+      setMessages([]);
+      setloading(true);
+    };
+  }, [chatid, msg]);
 
-   if(error){
+  // Handle server action state changes
+  useEffect(() => {
+    if (state.status === "error" && state.error) {
+      setError(state.error);
+    }
+  }, [state]);
+
+  // Handle keyboard shortcuts
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (e.key === "Enter" && !e.shiftKey) {
+  //     e.preventDefault();
+  //     handleDirectSubmit(e as any);
+  //   }
+  // };
+
+  if (error) {
     return (
-      <>
-        <div className="fixed border-transparent font-inter border-4 shadow-2xl z-50 bg-transparent ">
-            <p className="text-red-400 font-hind shadow-2xs font-normal text-xl mt-1">⚠️ {error}</p>
-          </div>
-
-      </>
+      <div className="fixed border-transparent font-inter border-4 shadow-2xl z-50 bg-transparent ">
+        <p className="text-red-400 font-hind shadow-2xs font-normal text-xl mt-1">
+          ⚠️ {error}
+        </p>
+        <button
+          onClick={() => setError(null)}
+          className="ml-4 text-white/70 hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
     );
-   }
-   if(loading){
-    return <Skeleton  />; 
-   }
-  
-   return (
-     <div className="flex items-center justify-center h-screen w-full">
-       <div className="flex flex-col justify-between w-[80vw] h-[90vh] bg-white/5 border border-white/20 rounded-2xl p-4 backdrop-blur-lg">
-         {/* Messages section */}
-         <div className="flex flex-col gap-4 overflow-y-auto flex-grow pr-2">
-           {message.map((m, idx) => (
-             <div key={String(m.id)}>
-               {m.role === "user" ? (
-                 <div className="flex justify-end">
-                   <div className="self-start text-white font-inter bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl max-w-[60%] break-words text-sm">
-                     {m.content}
-                   </div>
-                 </div>
-               ) : (
-                 <div className="flex justify-start  ">
-                   <div className="self-start text-white font-inter bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl max-w-[60%] break-words text-sm">
-                     {m.content}
-                   </div>
-                 </div>
-               )}
-             </div>
-           ))}
-         </div>
+  }
 
-         {/* Chat input form */}
-         <form className="flex w-full max-w-xl mt-4 self-center relative">
-           <div className="relative w-full max-w-xl">
-             <input type="hidden" name="mode" value="chat" />
-             <input
-               type="text"
-               name="message"
-               placeholder="Type your message..."
-               className="w-full pl-4 pr-[80px] py-3 rounded-full bg-white/80 text-black focus:outline-none shadow-md backdrop-blur-md"
-             />
-             <Button
-               type="submit"
-               className="absolute right-1 top-1/2 -translate-y-1/2 h-[42px] px-4 bg-black text-white rounded-full text-sm font-medium shadow-md"
-             >
-               Send
-             </Button>
-           </div>
-         </form>
-       </div>
-     </div>
-   );
-}
+  if (loading) {
+    return <Skeleton />;
+  }
+
+  return (
+    <div className="max-h-screen min-h-[100%-80px] flex items-center justify-center px-4">
+      <div className="w-full max-w-3xl h-[90vh] flex flex-col justify-between bg-white/5 border border-white/20 rounded-2xl p-4 backdrop-blur-lg">
+        {/* Messages section */}
+        <div className="flex flex-col gap-y-4 overflow-y-auto flex-grow pr-2">
+          {message.map((m) => (
+            <div
+              key={String(m.id)}
+              className={`flex ${
+                m.role === "assistant" ? "w-full justify-center" : ""
+              } `}
+            >
+              {m.role === "user" ? (
+                <div className="ml-auto max-w-[60%]">
+                  <div className="text-white font-inter bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl break-words text-sm">
+                    {m.content}
+                  </div>
+                </div>
+              ) : (
+                <div className="justify-center ml-2 w-full">
+                  <div className="text-white font-inter w-full bg-white/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-xl break-words text-sm">
+                    {m.content}
+                    {isStreaming &&
+                      m.id === streamingMessageRef.current?.id && (
+                        <span className="animate-pulse ml-1">▊</span>
+                      )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Chat input form */}
+        <form
+         // onSubmit={handleDirectSubmit}
+          className="flex w-full max-w-xl mt-4 self-center relative"
+        >
+          <div className="relative w-full">
+            <input
+              type="text"
+              name="message"
+              value={inputval}
+              placeholder="Type your message..."
+              onChange={(e) => setinputval(e.target.value)}
+             // onKeyDown={handleKeyDown}
+              disabled={isStreaming}
+              className="w-full pl-4 pr-[80px] py-3 rounded-full bg-white/80 text-black focus:outline-none shadow-md backdrop-blur-md disabled:opacity-50"
+            />
+            <Button
+              disabled={isStreaming || !inputval.trim()}
+              type="submit"
+              className="disabled:opacity-50 absolute right-1 top-1/2 -translate-y-1/2 h-[42px] px-4 bg-black text-white rounded-full text-sm font-medium shadow-md"
+            >
+              {isStreaming ? "..." : "Send"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
-export default ChatPage
+export default ChatPage;

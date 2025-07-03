@@ -5,9 +5,11 @@ import { prisma } from "@/lib/utils";
 const genAI = new GoogleGenerativeAI(process.env.Google_API_KEY!);
 
 export async function GET(
+
   req: NextRequest,
   { params }: { params: Promise<{ chatid: string }> }
 ) {
+    console.log("req recieved")
   const encoder = new TextEncoder();
   const chatid = (await params).chatid;
 
@@ -36,10 +38,15 @@ export async function GET(
   ];
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-  });
+     model: "gemini-1.5-flash",  });
+    const genconfig ={
+      "maxOutputTokens": 50,
+      "temperature":0.5,
+      "topP": 0.95,
+      "topK": 40,
+    }
 
-  const result = await model.generateContentStream({ contents: messages });
+  const result = await model.generateContentStream({ contents: messages,generationConfig:genconfig });
 
   let fullMessage = "";
 
@@ -66,6 +73,12 @@ export async function GET(
             createdAt: new Date(),
           },
         });
+        
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ token: "", done: true })}\n\n`
+          )
+        );
 
         controller.close();
       } catch (err) {
