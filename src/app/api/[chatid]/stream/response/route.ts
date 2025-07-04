@@ -40,7 +40,7 @@ export async function GET(
   const model = genAI.getGenerativeModel({
      model: "gemini-1.5-flash",  });
     const genconfig ={
-      "maxOutputTokens": 50,
+      "maxOutputTokens": 45,
       "temperature":0.5,
       "topP": 0.95,
       "topK": 40,

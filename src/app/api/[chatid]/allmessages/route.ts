@@ -25,8 +25,9 @@ export async function GET(
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
     if (!chat.messages || chat.messages.length === 0) {
-         return NextResponse.json({ allmessages: [] }, { status: 200 });
-       }
+      return NextResponse.json({ allmessages: [] }, { status: 200 });
+    }
+
     return NextResponse.json({ allmessages: chat.messages }, { status: 200 });
   } catch (e) {
     console.error("API Error:", e);

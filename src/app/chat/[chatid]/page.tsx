@@ -12,6 +12,7 @@ import {
   handleMessageButton,
   HandleMessageButtonprop,
 } from "@/app/action/handleMessageButton";
+import { handlesubmit } from "@/app/action/handlesubmit";
 
 function ChatPage() {
   const param = useParams();
@@ -36,7 +37,13 @@ function ChatPage() {
   const initialState: HandleMessageButtonprop = {
     error: "",
     status: null,
-    message: undefined,
+    message: {
+      id: "",
+      content: "",
+      chatid: chatid as string,
+      role: "user",
+      createdAt: new Date(),
+    },
   };
   const [state, formAction] = useActionState(handleMessageButton, initialState);
 
@@ -62,7 +69,7 @@ function ChatPage() {
     setisStreaming(true);
     setError(null);
 
-    // Create streaming message with unique ID
+    // Created a streaming message 
     const streamingMessage: Message = {
       id: `streaming-${crypto.randomUUID()}`,
       content: "",
@@ -99,8 +106,9 @@ function ChatPage() {
 
         // Check if this is a completion signal
         if (parsed.type === "complete" || parsed.done === true) {
-          console.log("Stream completed");
           setisStreaming(false);
+          console.log("Stream completed");
+          
 
           // Mark message as completed
           if (streamingMessageRef.current) {
@@ -157,30 +165,30 @@ function ChatPage() {
   };
 
   // Direct form submission handler (simplified)
-  // const handleDirectSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
+   const handleDirectSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
 
-  //   if (isStreaming || !inputval.trim()) return;
+     if (isStreaming || !inputval.trim()) return;
 
-  //   try {
-  //     const formData = new FormData();
-  //     formData.append("chatid", chatid as string);
-  //     formData.append("message", inputval.trim());
-  //     formData.append("mode", "chat");
+    try {
+     const formData = new FormData();
+      formData.append("chatid", chatid as string);
+      formData.append("message", inputval.trim());
+   
+       
+       const result = await handlesubmit(formData,initialState);
 
-  //     const result = await formAction(formData);
-
-  //     if (result.status === "success" && result.message) {
-  //       setinputval("");
-  //       handleMessageSent(result.message);
-  //     } else if (result.status === "error") {
-  //       setError(result.error || "Failed to send message");
-  //     }
-  //   } catch (err) {
-  //     console.error("Form submission error:", err);
-  //     setError("Failed to send message. Please try again.");
-  //   }
-  // };
+       if (result.status === "success" && result.message) {
+         setinputval("");
+        handleMessageSent(result.message);
+       } else if (result.status === "error") {
+        setError(result.error || "Failed to send message");
+     }
+  } catch (err) {
+       console.log("Form submission error:", err);
+      setError("Failed to send message. Please try again.");
+     }
+   };
 
   useEffect(() => {
     async function FetchChatdata() {
@@ -190,21 +198,22 @@ function ChatPage() {
 
       try {
         if (msg === "true") {
-          console.log("Fetching latest messages");
+         
 
           const res = await fetch(`/api/${chatid}/latest-user-message`);
           if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
           }
 
-          const { messages } = (await res.json()) as { messages: Message[] };
-
-          if (messages && messages.length > 0) {
+          const { allmessages } = (await res.json()) as { allmessages: Message[] };
+          console.log("Fetched latest user message:", allmessages);
+       
+          if (allmessages && allmessages.length > 0) {
             // Set all messages except the last one
-            const existingMessages = messages.slice(0, -1);
-            const latestUserMessage = messages[messages.length - 1];
+           
+            const latestUserMessage = allmessages[allmessages.length - 1];
 
-            setMessages(existingMessages);
+            setMessages([]);
             setloading(false);
 
             // Start streaming for the latest user message
@@ -213,7 +222,30 @@ function ChatPage() {
             }
           }
         } else {
-          setloading(false);
+          setloading(true);
+          //fetch user messages 
+          try{
+            const res = await fetch(`/api/${chatid}/allmessages`);
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+          
+            const {allmessages}  = await res.json() as { allmessages: Message[] };
+            console.log("Fetched messages:", allmessages);
+            if(allmessages.length === 0){
+              setMessages([]);
+              console.log(allmessages)
+            }
+            setMessages(allmessages as Message[]);
+          }catch(error){
+            console.error("Error fetching messages:", error);
+            setError("Failed to load messages. Please try again.");
+           
+            return;
+          }finally{
+            setloading(false);
+          }
+
         }
       } catch (fetchError) {
         console.error("Error fetching chat data:", fetchError);
@@ -241,13 +273,13 @@ function ChatPage() {
     }
   }, [state]);
 
-  // Handle keyboard shortcuts
-  // const handleKeyDown = (e: React.KeyboardEvent) => {
-  //   if (e.key === "Enter" && !e.shiftKey) {
-  //     e.preventDefault();
-  //     handleDirectSubmit(e as any);
-  //   }
-  // };
+ 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleDirectSubmit(e as any);
+    }
+  };
 
   if (error) {
     return (
@@ -274,7 +306,7 @@ function ChatPage() {
       <div className="w-full max-w-3xl h-[90vh] flex flex-col justify-between bg-white/5 border border-white/20 rounded-2xl p-4 backdrop-blur-lg">
         {/* Messages section */}
         <div className="flex flex-col gap-y-4 overflow-y-auto flex-grow pr-2">
-          {message.map((m) => (
+          {message?.map((m) => (
             <div
               key={String(m.id)}
               className={`flex ${
@@ -304,7 +336,7 @@ function ChatPage() {
 
         {/* Chat input form */}
         <form
-         // onSubmit={handleDirectSubmit}
+          onSubmit={handleDirectSubmit}
           className="flex w-full max-w-xl mt-4 self-center relative"
         >
           <div className="relative w-full">
@@ -319,7 +351,7 @@ function ChatPage() {
               className="w-full pl-4 pr-[80px] py-3 rounded-full bg-white/80 text-black focus:outline-none shadow-md backdrop-blur-md disabled:opacity-50"
             />
             <Button
-              disabled={isStreaming || !inputval.trim()}
+              disabled={isStreaming}
               type="submit"
               className="disabled:opacity-50 absolute right-1 top-1/2 -translate-y-1/2 h-[42px] px-4 bg-black text-white rounded-full text-sm font-medium shadow-md"
             >
