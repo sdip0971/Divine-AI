@@ -1,10 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/utils";
+import { getgitaresult } from "@/lib/pinecone";
 
 const genAI = new GoogleGenerativeAI(process.env.Google_API_KEY!);
 
 export async function GET(
+  
 
   req: NextRequest,
   { params }: { params: Promise<{ chatid: string }> }
@@ -12,6 +14,17 @@ export async function GET(
     console.log("req recieved")
   const encoder = new TextEncoder();
   const chatid = (await params).chatid;
+  
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",  });
+    const genconfig ={
+      "maxOutputTokens": 45,
+      "temperature":0.5,
+      "topP": 0.95,
+      "topK": 40,
+    }
+
 
   const chat = await prisma.chat.findUnique({
     where: { id: chatid },
@@ -21,30 +34,65 @@ export async function GET(
   if (!chat) {
     return new Response("Chat not found", { status: 404 });
   }
-
-  const messages = [
+  const lastusermessage = chat.messages.filter((msg)=>msg.role === "user").slice(-1)[0];
+  const ltmagent = [
+    {
+      role: "model",
+      parts: [
+        {
+          text: `You are an AI assistant tasked with identifying crucial user information for long-term memory.
+                  Review the following user message. If it contains any personal facts,user experience,life trauma ,past, preferences, or critical details that should be remembered for future interactions, extract them concisely. Otherwise, state "NONE".
+                    Examples:
+                  - User: "My name is Alex." -> Output:content:"Users name is Alex"
+                  -User : "I have been through a lot"-> Output:"User has past difficult experiences, leading to caution."
+                  -User : "I was Bullied in school"-> Output:"User has been bullied in school, bringing up trust issues."
+                 -User:"Who is krishna"-> Output: "NONE"
+                  User Message: "<USER_MESSAGE_HERE>"
+                  Output JSON:
+`,
+        },
+      ],
+    },
     {
       role: "user",
       parts: [
         {
-          text: `You are Divine AI, a spiritual guru trained on the Bhagavad Gita. Speak in poetic, lyrical tones. Quoute Sanskrit shlokas when needed. Respond in user's language always respond in smae language as the user. Always bring user back to the spiritual path.`,
+          text: lastusermessage.content,
         },
       ],
     },
+  ];
+
+
+  const Savetomemoryresponse  = await model.generateContent({
+    contents:ltmagent ,
+    generationConfig: genconfig,
+  });
+  console.log("save to memory response",Savetomemoryresponse.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim())
+  const saveToMemoryText = Savetomemoryresponse.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (saveToMemoryText !== "NONE" && saveToMemoryText !== "") {
+    // save to vector db
+  }
+ 
+  const context = await getgitaresult({query:lastusermessage.content,topK:5});
+  console.log("context",context)
+
+ const messages = [
+    {
+      role: "model",
+      parts: [
+        {
+          text: `You are Divine AI, a spiritual guru trained on the Bhagavad Gita. Speak in poetic, lyrical tones. Quoute Sanskrit shlokas when needed. Respond in user's language always respond in same language as the user. Always bring user back to the spiritual path.`,
+        },
+      ],
+    },
+
     ...chat.messages.map((msg) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
-    })),
+    })).slice(-10),
   ];
 
-  const model = genAI.getGenerativeModel({
-     model: "gemini-1.5-flash",  });
-    const genconfig ={
-      "maxOutputTokens": 45,
-      "temperature":0.5,
-      "topP": 0.95,
-      "topK": 40,
-    }
 
   const result = await model.generateContentStream({ contents: messages,generationConfig:genconfig });
 
@@ -100,7 +148,7 @@ export async function GET(
   });
 }
 
-// Ollama only takes palne text not chat gpt style prompts
+// Ollama only takes pale text not chat gpt style prompts
 // function formatMessages(messages: { role: string; content: string }[]) {
 //   return (
 //     messages

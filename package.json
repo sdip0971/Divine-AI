@@ -6,17 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "upload:gita": "node pinecone.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.22.0",
     "@google/genai": "^1.7.0",
     "@google/generative-ai": "^0.24.1",
+    "@langchain/core": "^0.3.62",
+    "@langchain/google-genai": "^0.2.14",
+    "@langchain/langgraph": "^0.3.6",
+    "@pinecone-database/pinecone": "^6.1.1",
     "@prisma/adapter-pg": "^6.10.1",
     "@prisma/client": "^6.10.1",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.0.1",
     "lucide-react": "^0.517.0",
     "next": "^15.3.4",
     "next-themes": "^0.4.6",
@@ -26,6 +32,7 @@
     "react-loading-skeleton": "^3.5.0",
     "tailwind-merge": "^3.3.1",
     "together-ai": "^0.16.0",
+    "uuid": "^11.1.0",
     "zod": "^3.25.67",
     "zustand": "^5.0.5"
   },
