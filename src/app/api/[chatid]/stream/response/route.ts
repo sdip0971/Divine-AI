@@ -1,9 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/utils";
-import { getgitaresult } from "@/lib/pinecone";
+import {pinecone} from "@/lib/pinecone";
+import { Memory } from "@/lib/pinecone";
 
+
+import { auth, getAuth } from "@clerk/nextjs/server";
+import { get } from "http";
 const genAI = new GoogleGenerativeAI(process.env.Google_API_KEY!);
+
 
 export async function GET(
   
@@ -14,8 +19,8 @@ export async function GET(
     console.log("req recieved")
   const encoder = new TextEncoder();
   const chatid = (await params).chatid;
-  
-
+  const userId =  (await auth()).userId
+  let memory = {};
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",  });
     const genconfig ={
@@ -35,20 +40,36 @@ export async function GET(
     return new Response("Chat not found", { status: 404 });
   }
   const lastusermessage = chat.messages.filter((msg)=>msg.role === "user").slice(-1)[0];
+  const getLastFewMessages = chat.messages.filter((msg) => msg.role === "user").slice(-3).map((msg) => msg.content).join("\n");
   const ltmagent = [
     {
       role: "model",
       parts: [
         {
-          text: `You are an AI assistant tasked with identifying crucial user information for long-term memory.
-                  Review the following user message. If it contains any personal facts,user experience,life trauma ,past, preferences, or critical details that should be remembered for future interactions, extract them concisely. Otherwise, state "NONE".
-                    Examples:
-                  - User: "My name is Alex." -> Output:content:"Users name is Alex"
-                  -User : "I have been through a lot"-> Output:"User has past difficult experiences, leading to caution."
-                  -User : "I was Bullied in school"-> Output:"User has been bullied in school, bringing up trust issues."
-                 -User:"Who is krishna"-> Output: "NONE"
-                  User Message: "<USER_MESSAGE_HERE>"
-                  Output JSON:
+          text: `You are analyzing a spiritual conversation for memory extraction. 
+Extract information in these categories:
+
+1. PERSONAL_INFO: Name, background, life situation
+2. SPIRITUAL_JOURNEY: Current spiritual practices, beliefs, questions
+3. LIFE_CHALLENGES: Problems seeking guidance for
+4. INSIGHTS_GAINED: Understanding or realizations from conversation
+5. TOPICS_EXPLORED: Spiritual concepts discussed
+6. EMOTIONAL_STATE: Current mental/emotional context
+7. LEARNING_STYLE: How user prefers to learn (practical/theoretical)
+
+User Message: "${lastusermessage.content}"
+Previous Context: "${getLastFewMessages? getLastFewMessages : "NONE"}"
+
+Output as JSON:
+{
+  "personal_info": "extracted info or NONE",
+  "spiritual_journey": "extracted info or NONE", 
+  "life_challenges": "extracted info or NONE",
+  "insights_gained": "extracted info or NONE",
+  "topics_explored": ["concept1", "concept2"] or [],
+  "emotional_state": "extracted info or NONE",
+  "learning_style": "extracted info or NONE"
+}
 `,
         },
       ],
@@ -64,17 +85,31 @@ export async function GET(
   ];
 
 
+
   const Savetomemoryresponse  = await model.generateContent({
     contents:ltmagent ,
     generationConfig: genconfig,
   });
   console.log("save to memory response",Savetomemoryresponse.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim())
-  const saveToMemoryText = Savetomemoryresponse.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (saveToMemoryText !== "NONE" && saveToMemoryText !== "") {
-    // save to vector db
+  const saveToMemoryText  = Savetomemoryresponse.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() 
+  const jsonMatch = saveToMemoryText?.match(/{[\s\S]*}/);
+  if(jsonMatch){
+  const jsonstring = jsonMatch[0]; 
+  const memoryres = JSON.parse(jsonstring);
+  memory = {
+    userId: userId,
+     personal_info: memoryres.personal_info
+  };
   }
+  // if (saveToMemoryText !== "NONE" && saveToMemoryText !== "") {
+  
+
+   
+  //   //save to vector db
+  //   await pinecone.saveUserMessage()
+  // }
  
-  const context = await getgitaresult({query:lastusermessage.content,topK:5});
+  const context = await pinecone.getGitaResult({query:lastusermessage.content,topK:5});
   console.log("context",context)
 
  const messages = [
@@ -86,11 +121,16 @@ export async function GET(
         },
       ],
     },
-
-    ...chat.messages.map((msg) => ({
-      role: msg.role,
-      parts: [{ text: msg.content }],
-    })).slice(-10),
+    ...(chat.messages.length > 10
+      ? chat.messages.map((msg) => ({
+          role: msg.role,
+          parts: [{ text: msg.content }],
+        })).slice(-10)
+      : chat.messages.map((msg) => ({
+          role: msg.role,
+          parts: [{ text: msg.content }],
+        }))
+    )
   ];
 
 

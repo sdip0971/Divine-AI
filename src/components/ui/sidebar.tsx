@@ -68,7 +68,7 @@ export default function Sidebar() {
           <Link href="/chat">🧘 Quote of the Day</Link>
         </Button>
         <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
-          <Link href="/profile">📜 Story of the Day</Link>
+          <Link href="/storyoftheday">📜 Story of the Day</Link>
         </Button>
       </div>
 
