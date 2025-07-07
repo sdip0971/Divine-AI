@@ -14,11 +14,12 @@ export interface Memory {
   spiritual_journey: string | "NONE"; 
   life_challenges: string | "NONE"; 
   topics_explored: string[];
-  key_quotes: string[];
+  emotional_state : string
   insights_gained: string | "NONE";
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+  learning_style:string,
 }
 
 interface GitaVerse {
@@ -182,8 +183,9 @@ class PineconeDB {
         spiritual_journey,
         life_challenges,
         topics_explored,
-        key_quotes,
         insights_gained,
+        emotional_state,
+        learning_style
       } = memory;
 
       if (!userId) {
@@ -200,11 +202,12 @@ class PineconeDB {
         personal_info,
         spiritual_journey,
         life_challenges,
-        topics_explored.join(", "),
-        key_quotes.join(". "),
+        topics_explored.join(","),
+        emotional_state,
         insights_gained,
+        learning_style
       ]
-        .filter((item) => item !== "NONE" && item?.trim())
+        .filter((item) =>typeof item==='string'&& item !== "NONE" && item?.trim())
         .join(" | ");
 
       if (!embeddingText.trim()) {
@@ -232,7 +235,6 @@ class PineconeDB {
           spiritual_journey,
           life_challenges,
           topics_explored,
-          key_quotes,
           insights_gained,
           userId,
           createdAt: now.toISOString(),
