@@ -134,9 +134,7 @@ Example JSON output:
   
 
    
-  //   //save to vector db
-  //   await pinecone.saveUserMessage()
-  // }
+
  
   const context = await pinecone.getGitaResult({query:lastusermessage.content,topK:5});
  

@@ -13,8 +13,11 @@ import {
   HandleMessageButtonprop,
 } from "@/app/action/handleMessageButton";
 import { handlesubmit } from "@/app/action/handlesubmit";
+import { useAuth } from "@clerk/nextjs";
 
 function ChatPage() {
+  const userid = useAuth().userId
+  console.log('user id is ',userid)
   const param = useParams();
   const searchParams = useSearchParams();
   const { chatid } = param;
