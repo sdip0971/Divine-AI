@@ -65,7 +65,7 @@ export default function Sidebar() {
       
       <div className="space-y-4 text-sm font-light tracking-wide text-indigo-100">
         <Button className="w-full font-poppins bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
-          <Link href="/chat">🧘 Quote of the Day</Link>
+          <Link href="/hha">🧘 Quote of the Day</Link>
         </Button>
         <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
           <Link href="/storyoftheday">📜 Story of the Day</Link>

@@ -44,3 +44,4 @@ next-env.d.ts
 /.clerk/
 
 /src/generated/prisma
+/gen-lang-client-0303042219-de4a633ea7fd.json

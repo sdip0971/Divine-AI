@@ -35,8 +35,9 @@ interface GitaVerse {
   word_meanings: string;
 }
 
-interface PineconeVector {
+export interface PineconeVector {
   id: string;
+  
   values: number[];
   metadata: Record<string, any>;
 }

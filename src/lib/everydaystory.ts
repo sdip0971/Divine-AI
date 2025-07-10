@@ -7,6 +7,7 @@
 //5)return json repsonse
 
 "use server";
+import { GoogleAuth } from "google-auth-library";
 import {
   START,
   END,
@@ -14,24 +15,32 @@ import {
   StateGraph,
   MemorySaver,
 } from "@langchain/langgraph";
+import { VertexAI } from "@google-cloud/vertexai";
+const vertexAI = new VertexAI({
+  project: "gen-lang-client-0303042219",
+  location: "us-central1",
+});
 import { Memory } from "@/lib/pinecone";
 import { pinecone } from "@/lib/pinecone";
 import { auth } from "@clerk/nextjs/server";
 import cron from "node-cron";
 import { filterMessages, HumanMessage } from "@langchain/core/messages";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Content, GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { prisma } from "@/lib/utils";
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from "next/server";
+import { POST } from "@/app/api/delete-chat/route";
 
 cloudinary.config({
-  cloud_name: "daugqhs17",
-  api_key: "437869453445987",
-  api_secret: "0-QBSHXoBCbmw1rNyOZD_bW_X-M",
+  cloud_name: process.env.cloud_name!,
+  api_key:process.env.api_key!,
+  api_secret: process.env.api_secret!,
 });
 
 export async function generateAndStoreStory(userId: string) {
   const genAI = new GoogleGenerativeAI(process.env.Google_API_KEY!);
+
+
 
   async function ReterieveMemory() {
     const pineconeobj = pinecone;
@@ -104,10 +113,10 @@ export async function generateAndStoreStory(userId: string) {
       const intentText =
         result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       console.log("Intent analysis response:", intentText);
-      
+
       const jsonMatch = intentText?.match(/{[\s\S]*}/);
       let intentobj = {};
-      
+
       if (jsonMatch) {
         try {
           intentobj = JSON.parse(jsonMatch[0]);
@@ -140,19 +149,19 @@ export async function generateAndStoreStory(userId: string) {
       const userContent = lastMessage?.content || "";
       const intent = lastMessage?.additional_kwargs?.intent || {};
 
-      const makestoryPrompt = `You are an ancient spiritual storyteller. Based on the user's emotional state and intent, create a meaningful spiritual story that provides guidance and inspiration. 
-
-UserIntent: ${JSON.stringify(intent)}
-UserMemories: ${userContent}
-
-Create a healing story that addresses their emotional needs and provides spiritual wisdom. The story should be complete and meaningful, around 2-3 paragraphs.
-
-IMPORTANT: Return ONLY a valid JSON response in this exact format:
-{"story":"Your complete story here"}`;
+      const makestoryPrompt = `You are an ancient mythological storyteller. Based on the user's emotional state and intent, give a meaningful hindu mythological story that provides guidance and inspiration. 
+      
+  UserIntent: ${JSON.stringify(intent)}
+  UserMemories: ${userContent}
+  
+  Create a healing story that addresses their emotional needs and provides spiritual wisdom. The story should be complete and meaningful, around 2-3 paragraphs.
+  Highlight a section of learning for user through this story
+  IMPORTANT: Return ONLY a valid JSON response in this exact format:
+  {"story":"Your complete story here","title":"A short Title for the story"}`;
 
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: makestoryPrompt }] }],
-        generationConfig: { 
+        generationConfig: {
           maxOutputTokens: 200,
           temperature: 0.7,
           topP: 0.8,
@@ -160,24 +169,58 @@ IMPORTANT: Return ONLY a valid JSON response in this exact format:
         },
       });
 
-      const storyText =
-        result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const storyText =result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       console.log("Raw story response:", storyText);
-      
-      const jsonMatch = storyText?.match(/{[\s\S]*}/);
+
       let story = "";
-      
-      if (jsonMatch) {
+      let title = '';
+      // First try to extract JSON from code blocks
+      const codeBlockMatch = storyText?.match(
+        /```(?:json)?\s*({[\s\S]*?})\s*```/
+      );
+      if (codeBlockMatch) {
         try {
-          const parsed = JSON.parse(jsonMatch[0]);
+          const parsed = JSON.parse(codeBlockMatch[1]);
           story = parsed.story || "";
+          title= parsed.title || ""
         } catch (parseError) {
-          console.log("JSON parse error:", parseError);
-          story = storyText || "";
+          console.log("Code block JSON parse error:", parseError);
+          // Try to extract just the story value from the raw text
+          const storyMatch = storyText?.match(
+            /"story":\s*"([^"\\]*(?:\\.[^"\\]*)*)"?/
+          );
+          if (storyMatch) {
+            story = storyMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
+          } else {
+            story = storyText || "";
+          }
         }
       } else {
-        story = storyText || "";
+        // Try to extract story value directly from malformed JSON
+        const storyMatch = storyText?.match(
+          /"story":\s*"([^"\\]*(?:\\.[^"\\]*)*)"?/
+        );
+        if (storyMatch) {
+          story = storyMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
+        } else {
+          // Original logic for non-code-block responses
+          const jsonMatch = storyText?.match(/{[\s\S]*}/);
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              story = parsed.story || "";
+            } catch (parseError) {
+              console.log("JSON parse error:", parseError);
+              story = storyText || "";
+            }
+          } else {
+            story = storyText || "";
+          }
+        }
       }
+
+      console.log("Extracted story:", story);
+      console.log("Story length:", story.length);
 
       const newMessage = new HumanMessage({
         content: userContent,
@@ -197,20 +240,21 @@ IMPORTANT: Return ONLY a valid JSON response in this exact format:
 
   async function makeimage({ messages }: typeof MessagesAnnotation.State) {
     try {
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
-          maxOutputTokens: 150,
-          temperature: 0.8,
-        }
+          maxOutputTokens: 250,
+          temperature: 0.7,
+          topP: 0.9,
+          topK: 40,
+        },
       });
-      
+
       const lastMessage = messages[messages.length - 1];
       const userContent = lastMessage?.content || "";
       const story = lastMessage?.additional_kwargs?.story || "";
 
       if (!story) {
-        console.log("No story found for image generation");
         return {
           messages: [
             ...messages,
@@ -219,7 +263,6 @@ IMPORTANT: Return ONLY a valid JSON response in this exact format:
               additional_kwargs: {
                 ...lastMessage?.additional_kwargs,
                 imageDescription: "No story available for image generation",
-                imageUrl: `https://example.com/placeholder-${userId}-${Date.now()}.jpg`,
               },
             }),
           ],
@@ -227,38 +270,205 @@ IMPORTANT: Return ONLY a valid JSON response in this exact format:
       }
 
       const prompt = `Based on this spiritual story, create a concise, vivid description for generating an aesthetic spiritual image:
-
-Story: "${story}"
-
-Create a single paragraph description that captures the essence, mood, and key visual elements of this story. Focus on spiritual symbols, natural elements, colors, and atmosphere.`;
+  
+  Story: "${story}"
+  
+  Create a single paragraph description that captures the essence, mood, and key visual elements of this story. Focus on spiritual symbols, natural elements, colors, and atmosphere.`;
 
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
-      const imageDescription = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      console.log("Image description generated:", imageDescription);
-      
-      // Note: Gemini doesn't generate images directly. You would need to use the description
-      // with an image generation service like DALL-E, Midjourney, or Stable Diffusion
-      const simulatedImageUrl = `https://example.com/generated-image-${userId}-${Date.now()}.jpg`;
+      // More robust way to extract the image description
+      let imageDescription = "";
 
+      try {
+        // First try the original approach
+        const rawText =
+          result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        console.log("Raw image description response:", rawText);
+
+        if (rawText) {
+          imageDescription = rawText;
+        } else {
+          // Try alternative response structure
+          const altText = result.response.text?.();
+          if (altText) {
+            imageDescription = altText.trim();
+          }
+        }
+
+        // If still empty, use the story as description
+        if (!imageDescription) {
+          //@ts-ignore
+          imageDescription = `A spiritual scene depicting: ${story.substring(
+            0,
+            200
+          )}...`;
+        }
+      } catch (extractError) {
+        console.log("Error extracting image description:", extractError);
+
+        //@ts-ignore
+        imageDescription = `A spiritual scene depicting: ${story.substring(
+          0,
+          200
+        )}...`;
+      }
+
+      console.log("Final image description:", imageDescription);
+
+      // IMPORTANT: Preserve the story in the new message
       const newMessage = new HumanMessage({
         content: userContent,
         additional_kwargs: {
           ...lastMessage?.additional_kwargs,
+          story, // Make sure the story is preserved
           imageDescription,
-          imageUrl: simulatedImageUrl,
         },
       });
+
+      console.log(
+        "🔍 DEBUG makeimage - preserving story:",
+        newMessage.additional_kwargs.story
+      );
 
       return { messages: [...messages, newMessage] };
     } catch (error) {
       console.log("Image generation error:", error);
+
+      // Even on error, try to provide a description based on the story
+      const lastMessage = messages[messages.length - 1];
+      const story = lastMessage?.additional_kwargs?.story || "";
+      const fallbackDescription = story
+        ? //@ts-ignore
+          `A spiritual scene depicting: ${story.substring(0, 200)}...`
+        : "A peaceful spiritual scene";
+
       return {
         messages: [
           ...messages,
-          new HumanMessage("Image Error: " + String(error)),
+          new HumanMessage({
+            content: lastMessage?.content || "",
+            additional_kwargs: {
+              ...lastMessage?.additional_kwargs,
+              imageDescription: fallbackDescription,
+            },
+          }),
+        ],
+      };
+    }
+  }
+
+  async function createimage({ messages }: typeof MessagesAnnotation.State) {
+    const lastMessage = messages[messages.length - 1];
+    const story = lastMessage?.additional_kwargs?.story || "";
+    const imagePrompt =
+      (lastMessage?.additional_kwargs?.imageDescription as string) || "";
+    console.log(imagePrompt);
+    // Ensure imagePrompt is explicitly a string
+    const promptText: string = imagePrompt;
+
+    const userContent = lastMessage?.content || "";
+
+    console.log("🔍 DEBUG createimage - story received:", story);
+
+    if (!story || !imagePrompt) {
+      return {
+        messages: [
+          ...messages,
+          new HumanMessage({
+            content: "Missing story or prompt",
+            additional_kwargs: {
+              ...lastMessage?.additional_kwargs,
+              story, 
+            },
+          }),
+        ],
+      };
+    }
+
+    try {
+  
+      const PROJECT_ID = "gen-lang-client-0303042219";
+      const MODEL_ID = "imagen-4.0-generate-preview-06-06"; 
+      const LOCATION = "us-central1";
+      const auth = new GoogleAuth({
+        scopes: "https://www.googleapis.com/auth/cloud-platform",
+      });
+
+      const client = await auth.getClient();
+      const { token } = await client.getAccessToken();
+      const ACCESS_TOKEN = token;
+     
+
+      const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:predict`;
+
+      const body = {
+        instances: [
+          { prompt: promptText }
+        ],
+        parameters: {
+          sampleCount: 1,
+          width: 1024,
+          height: 1024,
+          cfgScale: 8.0
+        }
+        }
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+        console.log(data)
+        const base64Image = data?.predictions?.[0]?.bytesBase64Encoded;
+        console.log(base64Image)
+
+      
+      
+
+      const uploadResult = await cloudinary.uploader.upload(
+        `data:image/png;base64,${base64Image}`,
+        {
+          folder: "spiritual-images",
+          public_id: `spiritual_${Date.now()}`,
+          overwrite: true,
+        }
+      );
+
+
+      const newMessage = new HumanMessage({
+        content: userContent,
+        additional_kwargs: {
+          ...lastMessage.additional_kwargs,
+          story, // IMPORTANT: Explicitly preserve the story
+          imageUrl: uploadResult.secure_url,
+        },
+      });
+
+      console.log(
+        "🔍 DEBUG createimage - final message story:",
+        newMessage.additional_kwargs.story
+      );
+
+      return { messages: [...messages, newMessage] };
+    } catch (error) {
+      console.log("Image creation error:", error);
+      return {
+        messages: [
+          ...messages,
+          new HumanMessage({
+            content: "Image creation failed",
+            additional_kwargs: {
+              ...lastMessage?.additional_kwargs,
+              story, 
+            },
+          }),
         ],
       };
     }
@@ -269,16 +479,48 @@ Create a single paragraph description that captures the essence, mood, and key v
     .addNode("analyseintent", analyseuserintent)
     .addNode("makestory", makestory)
     .addNode("makeimage", makeimage)
+    .addNode("createimage", createimage)
     .addEdge(START, "model")
     .addEdge("model", "analyseintent")
     .addEdge("analyseintent", "makestory")
     .addEdge("makestory", "makeimage")
-    .addEdge("makeimage", END);
+    .addEdge("makeimage", "createimage")
+    .addEdge("createimage", END);
 
   const compile = workflow.compile();
-  const finaldata = await compile.invoke({});
-  const story = finaldata.messages;
+  const finalData = await compile.invoke({});
+  const messages = finalData.messages;
+  const last = messages[messages.length - 1];
 
-  console.log("✅ Story + Image saved:", story);
-  return story;
+  let story = last?.additional_kwargs?.story || "";
+  let imageUrl = last?.additional_kwargs?.imageUrl || "";
+  console.log(story);
+  console.log(imageUrl);
+  if (typeof story !== "string") {
+    story = JSON.stringify(story);
+  }
+
+  if (typeof imageUrl !== "string") {
+    imageUrl = String(imageUrl);
+  }
+
+  // Optional: If no valid image, assign placeholder
+  if (!imageUrl || typeof imageUrl !== "string") {
+    imageUrl = "https://example.com/default-image.jpg"; // Fallback image
+  }
+
+  // Save to DB
+  const savedStory = await prisma.story.create({
+    data: {
+      //@ts-ignore
+      story: story,
+      userId : userId,
+      //@ts-ignore
+      image: imageUrl,
+    },
+  });
+
+  console.log("✅ Story saved to DB:", savedStory);
+
+  return { success: true, storyId: savedStory.id };
 }

@@ -7,9 +7,16 @@ import { Memory } from "@/lib/pinecone";
 
 import { auth, getAuth } from "@clerk/nextjs/server";
 import { get } from "http";
+import { redirect } from "next/navigation";
 const genAI = new GoogleGenerativeAI(process.env.Google_API_KEY!);
 
 
+export interface PineconeVector {
+  id: string;
+  score:number;
+  values: number[];
+  metadata: Record<string, any>;
+}
 export async function GET(
   
 
@@ -20,8 +27,11 @@ export async function GET(
   const encoder = new TextEncoder();
   const chatid = (await params).chatid;
   const userId =  (await auth()).userId
+  if(!userId || userId == null){
+   redirect('/login')
+  }
   let memory: Memory = {
-    userId: "NONE",
+    userId: '',
     personal_info: "NONE",
     life_challenges: "NONE",
     topics_explored: [],
@@ -46,12 +56,28 @@ export async function GET(
     where: { id: chatid },
     include: { messages: true },
   });
+  const ImprortanceThreeshold = 7
 
   if (!chat) {
     return new Response("Chat not found", { status: 404 });
   }
   const lastusermessage = chat.messages.filter((msg)=>msg.role === "user").slice(-1)[0];
-  
+  const getprevmemory = await pinecone.getUserMemories({userId,query:lastusermessage.content,topK:10})
+  const isDupCheck = getprevmemory.filter((mem:PineconeVector)=>{
+    const score = mem.score
+    return mem && score>0.75
+  }).reduce((acc: string[], mem: PineconeVector) => {
+    const metadata=mem.metadata
+    Object.values(metadata).forEach((val) => {
+      if (typeof val == "string" && val.trim().toUpperCase() != "NONE") {
+        acc.push(val);
+      } else if (Array.isArray(val) && val.length > 0) {
+        acc.push(val.join(", ").trim());
+      }
+    });
+    return acc;
+  }, []).join(',')
+  console.log("getprevmem",getprevmemory)
   const getLastFewMessages = chat.messages.filter((msg) => msg.role === "user").slice(-5).map((msg) => msg.content).join("\n");
   console.log(getLastFewMessages)
   const ltmagent = [
@@ -61,7 +87,7 @@ export async function GET(
         {
           text: `
     Current User Msg: "${lastusermessage.content}"
-PrevConversationContext : "{${getLastFewMessages ? getLastFewMessages : "NONE"}}"
+PrevConversationContext : "{${isDupCheck ? isDupCheck : "NONE"}}"
 Extract spiritual conversation memory from Current User Msg. Only save MEANINGFUL content.
 DO NOT save if this information was already discussed earlier. Strictly output importance_number < 7 if redundant.
 CRITICAL RULES:
@@ -119,7 +145,7 @@ Example JSON output:
      updatedAt: new Date(),
 
   };
-  if(memoryres.importance_number>=8){
+  if(memoryres.importance_number>=ImprortanceThreeshold){
    const save =await pinecone.saveUserMessage({memory})
    console.log(save)
   }

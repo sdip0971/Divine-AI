@@ -30,11 +30,12 @@ createdAt DateTime  @default(now())
 messages  Message[]
 UserID String 
 }
-model Story {
+model story {
   id String @id@default(cuid())
-  Story String 
+  story String 
   image String
   createdAt DateTime @default(now())
+  userId String
 }
 enum Role {
   user
