@@ -32,7 +32,7 @@ UserID String
 }
 model story {
   id String @id@default(cuid())
-  story String 
+  story String @db.Text()
   image String
   createdAt DateTime @default(now())
   userId String

@@ -162,7 +162,7 @@ export async function generateAndStoreStory(userId: string) {
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: makestoryPrompt }] }],
         generationConfig: {
-          maxOutputTokens: 200,
+          maxOutputTokens: 500,
           temperature: 0.7,
           topP: 0.8,
           topK: 40,
@@ -186,9 +186,7 @@ export async function generateAndStoreStory(userId: string) {
         } catch (parseError) {
           console.log("Code block JSON parse error:", parseError);
           // Try to extract just the story value from the raw text
-          const storyMatch = storyText?.match(
-            /"story":\s*"([^"\\]*(?:\\.[^"\\]*)*)"?/
-          );
+          const storyMatch = storyText?.match(/{[\s\S]*}/);
           if (storyMatch) {
             story = storyMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
           } else {

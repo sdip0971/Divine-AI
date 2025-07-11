@@ -22,7 +22,6 @@ function ChatTab({id}:{id:string}) {
     }
   return (
     <>
-       <div className='bg-gray-600 w-full h-0.5 border-1 border-solid border-slate-900'></div>
       <div className="w-full mt-8">
         <Button className=" flex justify-between w-full bg-slate-900 hover:from-indigo-800 hover:to-purple-900 text-white px-2 py-2 rounded-md shadow-md transition-all duration-300">
           <Link className="overflow-hidden" href={`/chat/${id}`}>

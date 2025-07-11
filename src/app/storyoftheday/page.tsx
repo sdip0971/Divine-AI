@@ -3,12 +3,16 @@ import Storycomponent from "@/components/ui/storypage"
 import { prisma } from "@/lib/utils"
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation";
+import { SarvamAIClient } from "sarvamai";
 
-async function StoryPage() {
+
+export default async function StoryPage() {
   const { userId } = await auth();
   if(!userId){
    redirect('/login')
   }
+ 
+  
    const fetchdb = async()=>{
     const storyfetch = await prisma.story.findMany({
       where:{
@@ -31,4 +35,4 @@ async function StoryPage() {
   )
 }
 
-export default StoryPage
+
