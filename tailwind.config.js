@@ -13,6 +13,7 @@ module.exports = {
            geistMono: ['var(--font-geist-mono)', 'monospace'],
           hind: ['var(--font-hind)', 'sans-serif'],
           poppins: ['var(--font-poppins)', 'sans-serif'],
+        fredericka: ['var(--font-Fredericka_the_Great)', 'cursive'],
       },
     },
   },

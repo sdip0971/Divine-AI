@@ -50,7 +50,7 @@ function ChatPage() {
   };
   const [state, formAction] = useActionState(handleMessageButton, initialState);
 
-  // Cleanup function for EventSource
+
   const cleanupStream = () => {
     if (eventRef.current) {
       eventRef.current.close();
@@ -66,7 +66,7 @@ function ChatPage() {
 
   // Enhanced message streaming handler
   const handleMessageSent = (userMessage: Message) => {
-    // Clean up any existing stream
+    // Clean up any existing stream if any just precaution
     cleanupStream();
 
     setisStreaming(true);
@@ -167,7 +167,7 @@ function ChatPage() {
     };
   };
 
-  // Direct form submission handler (simplified)
+  // Direct form submission handler
    const handleDirectSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
 
@@ -226,6 +226,7 @@ function ChatPage() {
           }
         } else {
           setloading(true);
+          setMessages([])
           //fetch user messages 
           try{
             const res = await fetch(`/api/${chatid}/allmessages`);

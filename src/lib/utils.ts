@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-
+import { withAccelerate } from "@prisma/extension-accelerate";
 import { PrismaClient } from "@/generated/prisma";
 
 const globalForPrisma = globalThis as unknown as {
@@ -13,8 +13,4 @@ export function cn(...inputs: ClassValue[]) {
 const connectionString = process.env.DATABASE_URL;
 
 console.log("DATABASE_URL =", process.env.DATABASE_URL);
-export const prisma = new PrismaClient({
-  datasources: {
-    db: { url: process.env.DATABASE_URL! },
-  },
-});
+export const prisma = new PrismaClient()

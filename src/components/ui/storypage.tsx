@@ -96,18 +96,18 @@ function Storycomponent({
         </div>
         <div className="flex flex-col border-rounded  bg-opacity-10  backdrop-blur-sm items-center py-8 px-4 space-y-6 max-w-3xl mx-auto">
           <div className="w-full   rounded-2xl shadow-xl ">
-            <Image
+            {image ?  <Image
               src={image}
               alt="Story Image"
               width={1200}
               height={600}
               className="w-full h-auto object-cover"
               priority
-            />
+            /> : ""}
           </div>
           <div className="w-full bg-opacity-90  rounded-2xl shadow-lg p-2 overflow-y-auto max-h-[40vh]">
             <div className="text-white-800 font-hind text-shadow-lg  leading-relaxed text-lg whitespace-pre-wrap">
-              {story}
+              {story ? story :"No Story Available"}
             </div>
           </div>
         </div>

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono,Hind,Poppins } from "next/font/google";
+import { Geist, Geist_Mono,Hind,Poppins ,Fredericka_the_Great} from "next/font/google";
 import "./globals.css";
 import Header from "@/components/ui/header";
 import { SidebarProvider } from "@/components/Sidebarprovide";
+
 import {
   ClerkProvider,
   SignInButton,
@@ -18,6 +19,12 @@ import { CreatenewChatProvider } from "@/components/ui/CreatenewChatProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+const Fredericka = Fredericka_the_Great({
+  variable: "--font-Fredericka_the_Great",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "400"
 });
 
 const geistMono = Geist_Mono({
@@ -68,6 +75,7 @@ export default function RootLayout({
                 ${geistMono.variable} 
                 ${hind.variable} 
                 ${poppins.variable}
+                ${Fredericka.variable}
                 antialiased 
                 h-screen
                 bg-black
@@ -86,7 +94,7 @@ export default function RootLayout({
                 />
 
                 {/* 🖌️ Dark overlay for contrast */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-black/60 to-transparent z-10 backdrop-blur-sm" />
+                <div className="fixed inset-0 bg-gradient-to-tr from-black/80 via-black/60 to-transparent z-10 backdrop-blur-sm" />
 
                 {/* 📱 Mobile fallback overlay */}
                 <div className="md:hidden absolute inset-0 bg-black/30 backdrop-blur-md z-20 pointer-events-none" />
