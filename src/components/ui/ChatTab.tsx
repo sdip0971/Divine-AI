@@ -13,12 +13,13 @@ function ChatTab({id}:{id:string}) {
    const router = useRouter()
  
     const handleDelete = async(id:string)=>{
-     removeChat(id)
+      removeChat(id)
+     await deleteChatfromServer(id);
      setConfirmdialogue(false);
      if (pathname == `/chat/${id}`) {
        router.push("/chat");
      }
-    await deleteChatfromServer(id);
+   
     }
   return (
     <>

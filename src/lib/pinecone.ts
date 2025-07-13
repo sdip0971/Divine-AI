@@ -20,6 +20,7 @@ export interface Memory {
   createdAt: Date;
   updatedAt: Date;
   learning_style:string,
+  language_used:string | "NONE",
 }
 
 interface GitaVerse {
@@ -186,7 +187,8 @@ class PineconeDB {
         topics_explored,
         insights_gained,
         emotional_state,
-        learning_style
+        learning_style,
+        language_used,
       } = memory;
 
       if (!userId) {
@@ -206,7 +208,8 @@ class PineconeDB {
         topics_explored.join(","),
         emotional_state,
         insights_gained,
-        learning_style
+        learning_style,
+        language_used
       ]
         .filter((item) =>typeof item==='string'&& item !== "NONE" && item?.trim())
         .join(" | ");
@@ -240,6 +243,7 @@ class PineconeDB {
           userId,
           createdAt: now.toISOString(),
           updatedAt: now.toISOString(),
+          language_used
         },
       };
 

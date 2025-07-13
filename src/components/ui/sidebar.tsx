@@ -49,17 +49,14 @@ export default function Sidebar() {
         </Button>
 
         <div className="flex items-center justify-between mb-12">
-
           <div>
             <Link href={"/chat"}>
-            <img
-              src="/icons/feather.jpg"
-              alt="Feather Icon"
-              className="w-10 h-10 rounded-full border-2 border-white shadow-md"
-            />
+              <img
+                src="/icons/download.jpeg"
+                alt="Feather Icon"
+                className="w-15 h-10 rounded-full border-2 border-white shadow-md"
+              />
             </Link>
-        
-            
           </div>
           <Button
             onClick={toggleSidebar}
@@ -77,10 +74,10 @@ export default function Sidebar() {
 
         <div className="space-y-4 text-sm font-light tracking-wide text-indigo-100">
           <Button className="w-full font-poppins bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
-            <Link href="/hha">🧘 Quote of the Day</Link>
+            <Link href="/personalizedcontent">Horoscope and Content</Link>
           </Button>
           <Button className="w-full bg-gradient-to-br from-indigo-500 to-green-300 hover:from-indigo-800 hover:to-purple-900 text-white px-4 py-2 rounded-md shadow-md transition-all duration-300">
-            <Link href="/storyoftheday">📜 Story of the Day</Link>
+            <Link href="/storyoftheday">Story of the Day</Link>
           </Button>
         </div>
 
@@ -98,7 +95,7 @@ export default function Sidebar() {
 
         {/* ✨ Footer Vibe */}
         <div className="absolute bottom-4 left-6 text-xs text-indigo-300 font-light opacity-70">
-          Powered by Gita ⚡
+          Clear Your Mind
         </div>
       </div>
     </>

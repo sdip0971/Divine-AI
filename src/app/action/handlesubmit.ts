@@ -7,9 +7,14 @@ const messageValidation = z
   .min(1, "Message cannot be empty")
   .max(1000, "Message cannot exceed 1000 characters");
 import { HandleMessageButtonprop } from "./handleMessageButton";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 export async function handlesubmit(formdata:FormData,initialstate:HandleMessageButtonprop): Promise<{ status: string; message?: Message; error?: string }> {
   const chatid = formdata.get("chatid") as string;
-
+  const { userId } = await auth();
+  if(!userId){
+     redirect('/login')
+  }
   if (!chatid) {
     console.error("handlesubmit: chatid is missing from form data.");
     return { status: "error", error: "Chat ID is missing. Please try again." };
@@ -17,7 +22,9 @@ export async function handlesubmit(formdata:FormData,initialstate:HandleMessageB
   
 
   const chat = await prisma.chat.findUnique({
-    where: { id: chatid },
+    where: { id: chatid ,
+      UserID:userId
+    },
     include: { messages: true },
   });
 

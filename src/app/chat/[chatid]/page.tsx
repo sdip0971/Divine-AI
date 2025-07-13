@@ -1,5 +1,5 @@
 "use client";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/ui/sidebar";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { messageStore } from "@/components/ui/messagestore";
@@ -14,6 +14,7 @@ import {
 } from "@/app/action/handleMessageButton";
 import { handlesubmit } from "@/app/action/handlesubmit";
 import { useAuth } from "@clerk/nextjs";
+import router from "next/router";
 
 function ChatPage() {
   const userid = useAuth().userId
@@ -36,6 +37,8 @@ function ChatPage() {
   const [isStreaming, setisStreaming] = useState(false);
   const streamingMessageRef = useRef<Message | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter()
+  const hasStreamed = useRef(true)
 
   const initialState: HandleMessageButtonprop = {
     error: "",
@@ -124,7 +127,11 @@ function ChatPage() {
             setMessages(updatedMessages);
           }
 
+
           cleanupStream();
+          if(msg==="true"){
+            router.replace(`/chat/${chatid}`, { scroll: false });
+          }
           return;
         }
 
@@ -198,10 +205,12 @@ function ChatPage() {
       setMessages([]);
       setError(null);
       setloading(true);
+      
 
       try {
-        if (msg === "true") {
-         
+        if (msg === "true" && hasStreamed.current) {
+         hasStreamed.current=false
+         try{
 
           const res = await fetch(`/api/${chatid}/latest-user-message`);
           if (!res.ok) {
@@ -224,6 +233,10 @@ function ChatPage() {
               handleMessageSent(latestUserMessage);
             }
           }
+        }catch{
+         setError("Failed to load messages. Please try again.");
+        }
+
         } else {
           setloading(true);
           setMessages([])
@@ -287,7 +300,7 @@ function ChatPage() {
 
   if (error) {
     return (
-      <div className="fixed border-transparent font-inter border-4 shadow-2xl z-50 bg-transparent ">
+      <div className="flex-1 flex flex-col justify-center items-center px-4 md:px-6 overflow-y-auto mb-2  font-extrabold text-red">
         <p className="text-red-400 font-hind shadow-2xs font-normal text-xl mt-1">
           ⚠️ {error}
         </p>

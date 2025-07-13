@@ -81,33 +81,39 @@ function Storycomponent({
 
   return (
     <>
-      <div>
-        <h1 className="font-extrabold text-5xl flex justify-center font-hind text-amber-50 text-shadow-2xs">
-         Personalized Story of the Day
-        </h1>
-        <div className="flex justify-end mt-2 bg-transparent">
-          <select
-            className="bg-transparent font-extrabold text-amber-50 text-shadow-2xs border border-border rounded-md px-3 py-1 text-sm"
-            onChange={(e) => handleTranslate(e)}
-          >
-            <option value="en-IN">English</option>
-            <option value="hi-IN">Hindi</option>
-          </select>
-        </div>
-        <div className="flex flex-col border-rounded  bg-opacity-10  backdrop-blur-sm items-center py-8 px-4 space-y-6 max-w-3xl mx-auto">
-          <div className="w-full   rounded-2xl shadow-xl ">
-            {image ?  <Image
-              src={image}
-              alt="Story Image"
-              width={1200}
-              height={600}
-              className="w-full h-auto object-cover"
-              priority
-            /> : ""}
+      <div className="flex flex-col flex-1  min-h-0  px-2">
+        <div className="border-8 border-solid ">
+          <h1 className="font-extrabold text-5xl mt-4   flex justify-center font-hind text-amber-50 text-shadow-2xs">
+            Story of the Day
+          </h1>
+          <div className="flex justify-end mt-2  mr-4 bg-transparent">
+            <select
+              className="bg-transparent font-extrabold text-amber-50 text-shadow-2xs border border-border rounded-md px-3 py-1 text-sm"
+              onChange={(e) => handleTranslate(e)}
+            >
+              <option value="en-IN">English</option>
+              <option value="hi-IN">Hindi</option>
+            </select>
           </div>
-          <div className="w-full bg-opacity-90  rounded-2xl shadow-lg p-2 overflow-y-auto max-h-[40vh]">
-            <div className="text-white-800 font-hind text-shadow-lg  leading-relaxed text-lg whitespace-pre-wrap">
-              {story ? story :"No Story Available"}
+          <div className="flex flex-col border-rounded rounded-2xl mb-2 bg-opacity-10  backdrop-blur-sm items-center py-8 px-4 space-y-6 max-w-3xl mx-auto">
+            <div className="w-full border-8 border-solid border-b-blue-300  rounded-2xl shadow-xl ">
+              {image ? (
+                <Image
+                  src={image}
+                  alt="Story Image"
+                  width={1200}
+                  height={600}
+                  className="w-full h-[50vh] object-cover"
+                  priority
+                />
+              ) : (
+                ""
+              )}
+            </div>
+            <div className="w-full bg-opacity-90  rounded-2xl shadow-lg p-2 overflow-y-auto max-h-[40vh]">
+              <div className="text-white-800 font-hind text-shadow-lg  leading-relaxed text-lg whitespace-pre-wrap">
+                {story ? story : "No Story Available"}
+              </div>
             </div>
           </div>
         </div>

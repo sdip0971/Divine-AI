@@ -24,8 +24,8 @@ function Chat() {
         Get spiritual guidance, real-time wisdom, and ancient answers to modern
         chaos.
       </h1>
-      <form className="w-full max-w-xl mt-2 relative" action={formAction}>
-        <div className="relative w-full max-w-xl">
+      <form className="w-full pt-4 max-w-xl mt-2 relative" action={formAction}>
+        <div className="relative  w-full max-w-xl">
           <input type="hidden" name="mode" value="chat" />
           <input
             type="text"

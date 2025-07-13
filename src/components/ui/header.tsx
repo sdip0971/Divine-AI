@@ -19,7 +19,7 @@ export default function Header() {
   const { isSignedIn } = useUser();
 
   return (
-    <header className="sticky top-2 w-full flex justify-between items-center p-4 z-30 ">
+    <header className="sticky top-2 w-full flex justify-between items-center p-4 z-[999] ">
      
         <Button
           onClick={toggleSidebar}

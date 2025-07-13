@@ -41,6 +41,7 @@ export async function GET(
     insights_gained: "NONE",
     createdAt: new Date(),
     updatedAt: new Date(),
+    language_used:"NONE"
   };
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",  });
@@ -53,8 +54,10 @@ export async function GET(
 
 
   const chat = await prisma.chat.findUnique({
-    where: { id: chatid },
-    include: { messages: true },
+    where: { id: chatid , 
+      UserID:userId
+    },
+    include: { messages: true }, 
   });
   const ImprortanceThreeshold = 7
 
@@ -77,7 +80,7 @@ export async function GET(
     });
     return acc;
   }, []).join(',')
-  console.log("getprevmem",getprevmemory)
+
   const getLastFewMessages = chat.messages.filter((msg) => msg.role === "user").slice(-5).map((msg) => msg.content).join("\n");
   console.log(getLastFewMessages)
   const ltmagent = [
@@ -114,7 +117,8 @@ Example JSON output:
   "insights_gained": "actual realizations from conversation or NONE",
   "topics_explored": ["deep spiritual concepts discussed"] or [],
   "emotional_state": "meaningful emotional context or NONE",
-  "learning_style": "clear preference practical/theoretical or NONE"
+  "learning_style": "clear preference practical/theoretical or NONE",
+  "language_used":"Hindi",
   "importance_number": number(1 to 10)
 }`,
         },
@@ -141,6 +145,7 @@ Example JSON output:
      spiritual_journey:memoryres.spiritual_journey,
      emotional_state:memoryres.emotional_state,
      learning_style:memoryres.learning_style,
+     language_used:memoryres.language_used,
      createdAt: new Date(),
      updatedAt: new Date(),
 

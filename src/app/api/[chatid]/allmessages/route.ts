@@ -16,6 +16,7 @@ export async function GET(
     const chat = await prisma.chat.findUnique({
       where: {
         id: chatid,
+        UserID:user.userId
       },
       include: {
         messages: true,

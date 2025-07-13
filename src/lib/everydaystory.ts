@@ -8,6 +8,7 @@
 
 "use server";
 import { GoogleAuth } from "google-auth-library";
+
 import {
   START,
   END,
@@ -36,6 +37,7 @@ cloudinary.config({
   api_key:process.env.api_key!,
   api_secret: process.env.api_secret!,
 });
+
 
 export async function generateAndStoreStory(userId: string) {
   const genAI = new GoogleGenerativeAI(process.env.Google_API_KEY!);
@@ -157,12 +159,11 @@ export async function generateAndStoreStory(userId: string) {
   Create a healing story that addresses their emotional needs and provides spiritual wisdom. The story should be complete and meaningful, around 2-3 paragraphs.
   Highlight a section of learning for user through this story
   IMPORTANT: Return ONLY a valid JSON response in this exact format:
-  {"story":"Your complete story here","title":"A short Title for the story"}`;
+  {"story":"Your complete story here ,what you learnt from this - lesson for user","title":"A short Title for the story"}`;
 
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: makestoryPrompt }] }],
         generationConfig: {
-          maxOutputTokens: 500,
           temperature: 0.7,
           topP: 0.8,
           topK: 40,
@@ -409,7 +410,7 @@ export async function generateAndStoreStory(userId: string) {
         parameters: {
           sampleCount: 1,
           width: 1024,
-          height: 1024,
+          height: 600,
           cfgScale: 8.0
         }
         }
@@ -502,9 +503,9 @@ export async function generateAndStoreStory(userId: string) {
     imageUrl = String(imageUrl);
   }
 
-  // Optional: If no valid image, assign placeholder
+  
   if (!imageUrl || typeof imageUrl !== "string") {
-    imageUrl = "https://example.com/default-image.jpg"; // Fallback image
+    imageUrl = "https://example.com/default-image.jpg"; 
   }
 
   // Save to DB

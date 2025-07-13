@@ -105,7 +105,10 @@ export default function RootLayout({
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col relative z-30">
                   <Header />
-                  <main style={{ height: 'calc(100vh - 80px)' }} className="flex-1 flex flex-col mb-2  px-4 md:px-6 overflow-y-auto text-white">
+                  <main
+                    
+                    className="flex-1 flex flex-col px-4 md:px-6 overflow-y-auto mb-2  text-white"
+                  >
                     {children}
                   </main>
                 </div>
