@@ -61,7 +61,7 @@ class PineconeDB {
     if (!googleApiKey) {
       throw new Error("GOOGLE_API_KEY is not set in environment variables");
     }
-
+   
     this.client = new PineconeClient({
       apiKey: this.key,
     });
@@ -114,11 +114,11 @@ class PineconeDB {
 
           data.push(pineconeVector);
 
-          // Batch upsert when we reach the batch size
+       
           if (data.length >= this.BATCH_SIZE) {
             await index.upsert(data);
             console.log(`Upserted batch of ${data.length} vectors`);
-            data.length = 0; // Clear the array for the next batch
+            data.length = 0; 
           }
         } catch (error) {
           console.error(`Error processing verse ${verse.id}:`, error);

@@ -12,5 +12,5 @@ export function cn(...inputs: ClassValue[]) {
 }
 const connectionString = process.env.DATABASE_URL;
 
-console.log("DATABASE_URL =", process.env.DATABASE_URL);
+
 export const prisma = new PrismaClient()

@@ -40,29 +40,21 @@ export default function Sidebar() {
           backgroundPosition: "center",
         }}
       >
-        <Button
-          onClick={toggleSidebar}
-          aria-label="Close sidebar"
-          className=" absolute top-4 right-4 p-2 rounded-md bg-white/10 hover:bg-white/20"
-        >
-          <X size={20} />
-        </Button>
-
         <div className="flex items-center justify-between mb-12">
-          <div>
-            <Link href={"/chat"}>
-              <img
-                src="/icons/download.jpeg"
-                alt="Feather Icon"
-                className="w-15 h-10 rounded-full border-2 border-white shadow-md"
-              />
-            </Link>
-          </div>
+          <Link href={"/chat"}>
+            <img
+              src="/icons/download.jpeg"
+              alt="Feather Icon"
+              className="w-10 h-9 rounded-full border-2 border-white shadow-md"
+            />
+          </Link>
           <Button
             onClick={toggleSidebar}
             aria-label="Close sidebar"
-            className=" absolute top-4 right-4 p-2 rounded-md bg-white/10 hover:bg-white/20"
-          ></Button>
+            className="  hover:text-red-600 rounded-md bg-white/10 hover:bg-white/20"
+          >
+            <X size={20} />
+          </Button>
         </div>
 
         <form action={formAction} className="mb-6">

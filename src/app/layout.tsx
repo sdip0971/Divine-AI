@@ -3,7 +3,7 @@ import { Geist, Geist_Mono,Hind,Poppins ,Fredericka_the_Great} from "next/font/g
 import "./globals.css";
 import Header from "@/components/ui/header";
 import { SidebarProvider } from "@/components/Sidebarprovide";
-
+import Notification from "@/components/ui/notifications";
 import {
   ClerkProvider,
   SignInButton,
@@ -105,6 +105,7 @@ export default function RootLayout({
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col relative z-30">
                   <Header />
+                  <Notification /> 
                   <main
                     
                     className="flex-1 flex flex-col px-4 md:px-6 overflow-y-auto mb-2  text-white"

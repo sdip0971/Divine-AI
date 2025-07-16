@@ -21,7 +21,7 @@ export default function Header() {
   return (
     <header className="sticky top-2 w-full flex justify-between items-center p-4 z-[999] ">
      
-        <Button
+        {isSignedIn ?<Button
           onClick={toggleSidebar}
           aria-label="Close sidebar"
           className={`${
@@ -29,7 +29,7 @@ export default function Header() {
           }`}
         >
           <Menu size={20} />
-        </Button>
+        </Button>:""}
 
         <h1
           className={`ml-16 text-4xl font-semibold font-Fredericka_the_Great tracking-widest text-indigo-100 drop-shadow-[0_1px_1px_rgba(255,255,255,0.1)] font-cormorant`}

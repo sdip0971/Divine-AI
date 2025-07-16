@@ -112,8 +112,7 @@ export async function generateAndStoreStory(userId: string) {
         generationConfig: genconfig,
       });
 
-      const intentText =
-        result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const intentText =result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       console.log("Intent analysis response:", intentText);
 
       const jsonMatch = intentText?.match(/{[\s\S]*}/);
@@ -176,9 +175,7 @@ export async function generateAndStoreStory(userId: string) {
       let story = "";
       let title = '';
       // First try to extract JSON from code blocks
-      const codeBlockMatch = storyText?.match(
-        /```(?:json)?\s*({[\s\S]*?})\s*```/
-      );
+      const codeBlockMatch = storyText?.match(/```(?:json)?\s*({[\s\S]*?})\s*```/);
       if (codeBlockMatch) {
         try {
           const parsed = JSON.parse(codeBlockMatch[1]);
@@ -202,7 +199,7 @@ export async function generateAndStoreStory(userId: string) {
         if (storyMatch) {
           story = storyMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
         } else {
-          // Original logic for non-code-block responses
+          
           const jsonMatch = storyText?.match(/{[\s\S]*}/);
           if (jsonMatch) {
             try {
@@ -278,11 +275,11 @@ export async function generateAndStoreStory(userId: string) {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
-      // More robust way to extract the image description
+    
       let imageDescription = "";
 
       try {
-        // First try the original approach
+       
         const rawText =
           result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         console.log("Raw image description response:", rawText);
@@ -336,7 +333,7 @@ export async function generateAndStoreStory(userId: string) {
     } catch (error) {
       console.log("Image generation error:", error);
 
-      // Even on error, try to provide a description based on the story
+      
       const lastMessage = messages[messages.length - 1];
       const story = lastMessage?.additional_kwargs?.story || "";
       const fallbackDescription = story
