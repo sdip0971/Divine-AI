@@ -14,7 +14,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
-import { auth } from '@clerk/nextjs/server';
+
 interface RecommendationData {
   type: "ContentDone";
   timestamp: string;
@@ -82,11 +82,11 @@ function NotificationComponent() {
   const clearAll = () => setRecommendations([])
   return (
 
-      <div draggable className="mt-20 ml-4">
+      <div draggable className="mt-20  h-auto w-auto ml-4">
         <DropdownMenu>
           <DropdownMenuTrigger
             draggable
-            className="relative p-2  hover:bg-gray-100 rounded-full bg-white "
+            className="ml-4 p-2  hover:bg-gray-100 rounded-full bg-white "
           >
             <Bell className="h-5 w-5 " />
             {recommendations.length > 0 && (
@@ -122,17 +122,13 @@ function NotificationComponent() {
                       <div className="p-3">
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-medium text-sm">
-                            Found {rec.payload.data?.totalResults} results
+                            Found Something You might like
                           </p>
                           <span className="text-xs text-gray-500">
                             {new Date(rec.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-600 mb-3">
-                          For: "{rec.payload.data?.searchQuery}"
-                        </p>
-
-                        {/* YouTube Results */}
+                            {/* YouTube Results */}
                         {rec?.payload.data!.platforms?.youtube?.results
                           ?.length > 0 && (
                           <div className="mb-3">
@@ -221,9 +217,7 @@ function NotificationComponent() {
                         )}
                       </div>
                     ) : (
-                      <div className="p-3 text-red-600 text-sm">
-                       Failed: {rec.payload.error}
-                      </div>
+                      undefined
                     )}
                   </div>
                 ))}

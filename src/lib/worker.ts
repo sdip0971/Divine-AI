@@ -74,35 +74,31 @@ const contentworker = new Worker("generatecontent",async(job)=>{
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   const genconfig = {
     responseMimeType: "application/json",
-    maxOutputTokens: 200,
+
     temperature: 0.7,
     topP: 0.95,
     topK: 40,
   };
   const { lastusermessage,userId,chatid } = job.data
+  
   const prompt = lastusermessage.content as string
+  console.log(prompt)
   if (!prompt || !userId || !chatid) {
     throw new Error("Missing required job data");
   }
 
   function extractJsonString(responseText: string): string | null {
-    const jsonRegex = /(\{[\s\S]*?\})/;
-
-    const match = responseText.match(jsonRegex);
-
-    if (match) return match[1];
-
-    // Fallback: try to find "searchquery": "..."
-    const fallbackMatch = responseText.match(/"searchquery"\s*:\s*"([^"]+)"/);
-    if (fallbackMatch) {
-      return JSON.stringify({ searchquery: fallbackMatch[1] });
-    }
-
-    return null;
+      const cleaned = responseText.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+  const jsonRegex = /{[^{}]*}/;
+  const match = cleaned.match(jsonRegex);
+  return match ? match[0] : null;
   }
   let extractedSearchQuery = "";
+
   const formquery = async ({ messages }: typeof MessagesAnnotation.State) => {
     const userprompt = messages[0].content
+    console.log('messages',messages)
+    console.log("userprompt",userprompt)
 
     if (!userprompt) {
       console.error(
@@ -110,18 +106,20 @@ const contentworker = new Worker("generatecontent",async(job)=>{
       );
       throw new Error("Initial prompt missing in graph state.");
     }
-    const intentanalyse = `Generate a highly relevant search query for YouTube and similar platforms strictly related to Hinduism. The query must reflect the emotional tone or sentiment of the provided user prompt and incorporate Hindu philosophies, scriptures, deities, rituals, or spiritual practices accordingly. Ensure the generated query yields Hindu-centric content only. Given the prompt: "${prompt}", Respond only with raw JSON. No explanations, no markdown, no formatting.Example:{"searchquery": "generated-query"} Prompt: "${prompt}"`;
+    const intentanalyse = `Generate a highly relevant search query for YouTube and similar platforms strictly related to Hinduism. The query must reflect the emotional tone or sentiment of the provided user prompt and incorporate Hindu philosophies, scriptures, deities, rituals, or spiritual practices accordingly. Ensure the generated query yields Hindu-centric content only. Given the prompt: "${userprompt}", Respond only with raw JSON. No explanations, no markdown, no formatting.Example:{"searchquery": "generated-query"} Prompt: "${userprompt}"`;
     const msg = { role: "user", parts: [{ text: intentanalyse }] };
     const result = await model.generateContent({
       contents: [msg],
       generationConfig: genconfig,
     });
+
     
 
-    // const searchQuery =result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    const searchQuery = result.response.text();
+    // const searchQuery =result.response.candidates?.[0]?.content?.parts
+
+     const searchQuery = result.response.text();
     console.log("searchquery", searchQuery);
-    const jsonStr = extractJsonString(searchQuery);
+    const jsonStr = extractJsonString(searchQuery!);
     console.log("json", jsonStr);
     if (!jsonStr) {
       throw new Error("Failed to extract JSON from Gemini response");
@@ -138,7 +136,7 @@ const contentworker = new Worker("generatecontent",async(job)=>{
       });
       return { messages: [msg] };
     } catch (parseError) {
-      const match = searchQuery.match(/"searchquery"\s*:\s*"([^"]+)"/);
+      const match = searchQuery?.match(/"searchquery"\s*:\s*"([^"]+)"/);
       if (match) {
         extractedSearchQuery = match[1];
         console.log("extracted from regex:", extractedSearchQuery);
@@ -225,6 +223,7 @@ const contentworker = new Worker("generatecontent",async(job)=>{
     ];
     const result = await app.invoke({ messages: initialMessages });
     const lastMessage = result.messages[result.messages.length - 1];
+    console.log(lastMessage)
     let finalResult: CombinedResult;
     if (lastMessage?.additional_kwargs?.combinedResults) {
       try {

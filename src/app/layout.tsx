@@ -78,37 +78,38 @@ export default function RootLayout({
                 ${Fredericka.variable}
                 antialiased 
                 h-screen
+                w-screen
                 bg-black
               `}
             >
               <div className="relative w-screen h-screen md:flex">
                 {/* 🔮 Background Image */}
                 <div
-                  className="absolute inset-0 h-screen w-full bg-cover bg-center z-0 transition-all duration-1000"
+                  className="absolute inset-0 h-screen w-screen bg-cover bg-center z-0 transition-all duration-1000"
                   style={{
-                    backgroundImage: "url('/_.jpeg')", // 🔁 Replace with your Krishna image path
+                    backgroundImage: "url('/_.jpeg')",
                     backgroundSize: "cover",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "center",
                   }}
                 />
 
-                {/* 🖌️ Dark overlay for contrast */}
+                {/*  Dark overlay for contrast */}
                 <div className="fixed inset-0 bg-gradient-to-tr from-black/80 via-black/60 to-transparent z-10 backdrop-blur-sm" />
 
-                {/* 📱 Mobile fallback overlay */}
+                {/*  Mobile fallback overlay */}
                 <div className="md:hidden absolute inset-0 bg-black/30 backdrop-blur-md z-20 pointer-events-none" />
 
                 {/* Sidebar */}
                 <Sidebar />
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col relative z-30">
+                <div className=" absolute flex w-screen h-screen  flex-col relative z-30">
                   <Header />
-                  <Notification /> 
+                  {/* <Notification />  */}
                   <main
                     
-                    className="flex-1 flex flex-col px-4 md:px-6 overflow-y-auto mb-2  text-white"
+                    className="flex-1 min-h-0 flex flex-col px-4 md:px-6 overflow-y-auto mb-2  text-white"
                   >
                     {children}
                   </main>

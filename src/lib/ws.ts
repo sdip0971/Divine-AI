@@ -10,7 +10,7 @@ const io = new Server(httpServer, {
   },
 });
 
-const redis = new IORedis();
+
 // using middleware so none could hit the link and get access to socket
 // io.use(async (socket, next) => {
 //     const token = socket.handshake.auth.token;

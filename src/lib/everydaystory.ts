@@ -442,7 +442,7 @@ export async function generateAndStoreStory(userId: string) {
         content: userContent,
         additional_kwargs: {
           ...lastMessage.additional_kwargs,
-          story, // IMPORTANT: Explicitly preserve the story
+          story, 
           imageUrl: uploadResult.secure_url,
         },
       });
